@@ -30,6 +30,9 @@
             <p>
                 <b><a href="viewXmlS">无判断类型</a></b>
             </p>
+            <p>
+                <b><a href="vi">类型</a></b>
+            </p>
         </div>
     </body>
 </html>

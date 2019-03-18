@@ -36,21 +36,20 @@ import org.w3c.dom.Element;
  */
 @Controller
 public class HollController {
-        
+
         @RequestMapping(value = "/")
         public ModelAndView goHome(HttpServletResponse response) throws IOException {
-                System.out.println("三十VS VS VS VS是VS出手的速度村上春树");
                 return new ModelAndView("page");
         }
-        
-         @RequestMapping(value = "/viewXsl")
+
+        @RequestMapping(value = "/viewXsl")
         public ModelAndView viewXml(HttpServletRequest request, HttpServletResponse response) throws Exception {
                 // 构建XML文件的绝对路径
 
                 String xmlFile = "resources/a.xml";
                 String contextPath = request.getServletContext().getRealPath("");
                 String xmlFilePath = contextPath + File.separator + xmlFile;
-                
+
                 Source source = new StreamSource(new File(xmlFilePath));
 
                 // 将XML源文件添加到模型中，以便XsltView能够检测
@@ -588,4 +587,103 @@ public class HollController {
                 }
                 TransformerFactory.newInstance().newTransformer().transform(new DOMSource(doc), new StreamResult(response.getOutputStream()));
         }
+
+        @RequestMapping(value = "/vi")
+        public void view(HttpServletRequest request, HttpServletResponse response) throws Exception {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document doc = builder.newDocument();
+
+                //创建的根元素
+                Element documentElement = doc.createElement("document");
+                doc.appendChild(documentElement);
+                //创建客户端
+
+                CloseableHttpResponse response1 = HttpClients.createDefault().execute(new HttpGet("https://redan-api.herokuapp.com/story/"));
+                //返回字符串实体
+
+                HttpEntity entity1 = response1.getEntity();
+                if (entity1 != null) {
+                        //给返回的实体设置编码
+                        String retSrc = EntityUtils.toString(entity1, "UTF-8");
+                        //获得最外层的元素的是个数组
+                        JSONArray storyList = new JSONObject(retSrc).getJSONArray("result");
+
+                        // 那么遍历里面的元素取出所有的元素
+                        for (int i = 0; i < storyList.length(); i++) {
+                                //拿到json 每个数组元素判断json数组判断元素是否对象还是数组
+                                JSONObject jsonObject = storyList.getJSONObject(i);
+
+                                Iterator<String> next1 = jsonObject.keys();
+
+                                while (next1.hasNext()) {
+                                        String next2 = next1.next();
+                                        //文本的情况下
+                                        Element documentNext2 = doc.createElement(next2);
+                                        if (!(next2.equals("author") || next2.equals("comments"))) {
+                                                documentNext2.setTextContent(next2);
+                                                System.out.println("是文本的情况" + next2);
+                                        }
+                                        documentElement.appendChild(documentNext2);
+                                        //在comments数组中
+                                        if (next2.equals("comments")) {
+                                                JSONArray jsonArray = jsonObject.getJSONArray(next2);
+                                                //创建标签节点
+
+                                                for (int j = 0; j < jsonArray.length(); j++) {
+
+                                                        JSONObject jsonObject3 = jsonArray.getJSONObject(j);
+                                                        Iterator<String> next3 = jsonObject3.keys();
+                                                        while (next3.hasNext()) {
+                                                                String next4 = next3.next();
+                                                                Element createElement = doc.createElement(next4);
+                                                                if (!next4.equals("who")) {
+                                                                        String vaString = jsonObject3.getString(next4);
+                                                                        createElement.setTextContent(vaString);
+                                                                        System.out.println("不是who就是文本" + vaString);
+
+                                                                }
+                                                                if (next4.equals("who")) {
+                                                                        JSONObject jsonObject4 = jsonObject3.getJSONObject(next4);
+                                                                        Iterator<String> next5 = jsonObject4.keys();
+                                                                        while (next5.hasNext()) {
+                                                                                String next6 = next5.next();
+                                                                                String vaString = jsonObject4.getString(next6);
+                                                                                Element documentNext6 = doc.createElement(next6);
+                                                                                documentNext6.setTextContent(vaString);
+                                                                                System.out.println("who的值***************************" + vaString);
+                                                                                createElement.appendChild(documentNext6);
+                                                                        }
+                                                                }
+
+                                                                documentNext2.appendChild(createElement);
+                                                        }
+
+                                                }
+
+                                        }
+                                        if (next2.equals("author")) {
+                                                JSONObject jsonObject5 = jsonObject.getJSONObject(next2);
+                                                Iterator<String> next7 = jsonObject5.keys();
+                                                while (next7.hasNext()) {
+                                                        String next8 = next7.next();
+                                                        String vaString2 = jsonObject5.getString(next8);
+                                                        Element documentNext8 = doc.createElement(next8);
+                                                        documentNext8.setTextContent(vaString2);
+                                                        System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" + vaString2);
+                                                        documentNext2.appendChild(documentNext8);
+                                                }
+
+                                        }
+
+                                }
+
+                        }
+
+                }
+//更新到本项目
+                TransformerFactory.newInstance().newTransformer().transform(new DOMSource(doc), new StreamResult(response.getOutputStream()));
+                System.out.println("结束");
+        }
+
 }
